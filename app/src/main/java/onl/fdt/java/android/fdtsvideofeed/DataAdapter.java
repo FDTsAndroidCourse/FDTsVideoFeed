@@ -182,7 +182,13 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
                         public void run() {
                             Animation animFadeOut = AnimationUtils.loadAnimation(DataAdapter.this.context, R.anim.fade_out);
                             likeDisplay.startAnimation(animFadeOut);
-                            likeDisplay.setAlpha(0.0f);
+
+                            handler.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    likeDisplay.setAlpha(0.0f);
+                                }
+                            }, 200L);
                         }
                     }, 1000L);
                 }
