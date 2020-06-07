@@ -1,19 +1,44 @@
+/*
+ * Copyright (c) 2020 fdt <frederic.dt.twh@gmail.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining
+ * a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
 package onl.fdt.java.android.fdtsvideofeed;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.net.Uri;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.BasePlayer;
 import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.source.LoopingMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.ui.PlayerView;
@@ -26,11 +51,14 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import onl.fdt.java.android.fdtsvideofeed.api.payload.VideoEntity;
+import onl.fdt.java.android.fdtsvideofeed.doubleclick.DoubleClickListener;
 
 public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
 
     private static final Logger LOGGER = Logger.getLogger(DataAdapter.class.getName());
     private List<SimpleExoPlayer> playerList = new ArrayList<>();
+
+    private Handler handler = new Handler();
 
     private List<SimpleExoPlayer> registerPlayer(SimpleExoPlayer player) {
         playerList.add(player);
@@ -75,6 +103,8 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
 
         private final TextView likeCountTextView;
 
+        private final TextView likeDisplay;
+
         private int position = 0;
 
         ViewHolder(View v) {
@@ -85,6 +115,8 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
             this.playerView = v.findViewById(R.id.video_player);
 
             this.likeCountTextView = v.findViewById(R.id.like_count);
+
+            this.likeDisplay = v.findViewById(R.id.like_display);
 
         }
 
@@ -107,22 +139,62 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
 
             this.position = position;
 
+            SimpleExoPlayer player = new SimpleExoPlayer.Builder(DataAdapter.this.context).build();
+
             imageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    ((ViewGroup)imageView.getParent()).removeView(imageView);
+                    ((ViewGroup) imageView.getParent()).removeView(imageView);
 
-                    SimpleExoPlayer player = new SimpleExoPlayer.Builder(DataAdapter.this.context).build();
-
-                    player.prepare(buildMediaSource(Uri.parse(m.getFeedUrl())));
+                    player.prepare(new LoopingMediaSource(buildMediaSource(Uri.parse(m.getFeedUrl()))));
                     player.setPlayWhenReady(true);
 
                     playerView.setPlayer(player);
+                    playerView.hideController();
 
                     registerPlayer(player);
 
                 }
             });
+
+            playerView.setOnClickListener(new DoubleClickListener() {
+                @Override
+                public void onClick(View v) {
+                    super.onClick(v);
+
+                    if (player.isPlaying()) {
+                        player.setPlayWhenReady(false);
+                    } else {
+                        player.setPlayWhenReady(true);
+                    }
+                    player.getPlaybackState();
+                }
+
+                @Override
+                public void onDoubleClick() {
+                    Animation animFadeIn = AnimationUtils.loadAnimation(DataAdapter.this.context, R.anim.fade_in);
+                    likeDisplay.startAnimation(animFadeIn);
+
+                    likeDisplay.setAlpha(1.0f);
+
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            Animation animFadeOut = AnimationUtils.loadAnimation(DataAdapter.this.context, R.anim.fade_out);
+                            likeDisplay.startAnimation(animFadeOut);
+                            likeDisplay.setAlpha(0.0f);
+                        }
+                    }, 1000L);
+                }
+
+            });
+
+            playerView.setControllerVisibilityListener(i -> {
+                if (i == 0) {
+                    playerView.hideController();
+                }
+            });
+
 
         }
     }
