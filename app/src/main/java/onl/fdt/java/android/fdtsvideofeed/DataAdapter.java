@@ -85,7 +85,11 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
         this.context = context;
     }
 
-    void setVideoEntities(List<VideoEntity> videoEntities) {
+    /**
+     * Data adapter set datasets method
+     * @param videoEntities datasets to be set
+     */
+    public void setVideoEntities(List<VideoEntity> videoEntities) {
         this.videoEntities = videoEntities;
     }
 
@@ -120,6 +124,11 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
 
         }
 
+        /**
+         * https://codelabs.developers.google.com/codelabs/exoplayer-intro/#2
+         * @param uri
+         * @return
+         */
         private MediaSource buildMediaSource(Uri uri) {
 
             DataSource.Factory dataSourceFactory =
@@ -133,6 +142,8 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
             this.leftTextView.setText(m.getLeftText());
             this.likeCountTextView.setText(String.format("%d", m.getLikeCount()));
 
+            // Picasso https://guides.codepath.com/android/Displaying-Images-with-the-Picasso-Library
+            // Load image from URL
             Picasso.with(DataAdapter.this.context).load(m.getAvatar())
                     .centerCrop().fit()
                     .into(this.imageView);
@@ -141,12 +152,16 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
 
             SimpleExoPlayer player = new SimpleExoPlayer.Builder(DataAdapter.this.context).build();
 
+            // Avatar onClick listener
+            // start playing video
             imageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     ((ViewGroup) imageView.getParent()).removeView(imageView);
 
+                    // LoopingMediaSource
                     player.prepare(new LoopingMediaSource(buildMediaSource(Uri.parse(m.getFeedUrl()))));
+                    // Auto start play
                     player.setPlayWhenReady(true);
 
                     playerView.setPlayer(player);
@@ -157,7 +172,10 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
                 }
             });
 
+            // Player double click listener
             playerView.setOnClickListener(new DoubleClickListener() {
+
+                // Single click pause/resume
                 @Override
                 public void onClick(View v) {
                     super.onClick(v);
@@ -170,6 +188,7 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
                     player.getPlaybackState();
                 }
 
+                // Double click 'like' function
                 @Override
                 public void onDoubleClick() {
                     Animation animFadeIn = AnimationUtils.loadAnimation(DataAdapter.this.context, R.anim.fade_in);
@@ -195,6 +214,8 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
 
             });
 
+            // Hide controller
+            // Which was deprecated, improvement needed
             playerView.setControllerVisibilityListener(i -> {
                 if (i == 0) {
                     playerView.hideController();
